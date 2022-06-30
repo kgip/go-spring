@@ -1,0 +1,29 @@
+#gin服务配置
+server:
+  port: 80
+
+#mysql配置
+mysql:
+  path: 192.168.32.21:3306
+  username: root
+  password: 22222
+  db-name: redpacket
+  max-idle-conns: 100
+  max-open-conns: 200
+  conn-max-lifetime: 30m
+
+#redis配置
+redis:
+  db: 0
+  addr: 192.168.32.21:6379
+
+#zap配置
+zap:
+  level: 'info'
+  format: 'console'
+  director: 'log'
+  link-name: 'latest_log'
+  show-line: true
+  encode-level: 'LowercaseColorLevelEncoder'
+  stacktrace-key: 'stacktrace'
+  log-in-console: true
