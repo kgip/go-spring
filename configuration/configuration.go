@@ -4,6 +4,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"log"
+	"strings"
 )
 
 type Configuration struct {
@@ -19,10 +20,6 @@ func NewConfiguration(path string, refresh bool, configType string, logger *log.
 	//加载配置
 	config.Load()
 	return config
-}
-
-func (configuration *Configuration) AppendConfig() {
-
 }
 
 func (configuration *Configuration) Load() {
@@ -44,5 +41,24 @@ func (configuration *Configuration) Load() {
 }
 
 func (configuration *Configuration) GetConfig(configKey string) interface{} {
-	return configuration.configs[configKey]
+	splitedKeys := strings.Split(configKey, ".")
+	configMap := configuration.configs
+	for i := 0; i < len(splitedKeys); i++ {
+		isMatched := false
+		for mapKey, value := range configMap {
+			if mapKey == splitedKeys[i] {
+				if i >= len(splitedKeys) {
+					return value
+				} else {
+					isMatched = true
+					configMap = value.(map[string]interface{})
+					break
+				}
+			}
+		}
+		if !isMatched {
+			break
+		}
+	}
+	return nil
 }
