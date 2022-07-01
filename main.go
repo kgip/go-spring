@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"go-spring/ioc"
 	"log"
 )
 
@@ -20,10 +21,10 @@ type MysqlConfig struct {
 }
 
 type MysqlAllConfig struct {
-	Path      string            `configKey:"mysql.path"`      // 服务器地址:端口
-	Dbname    string            `configKey:"mysql.dbname"`    // 数据库名
+	Path      string            `configKey:"mysql.path"`     // 服务器地址:端口
+	Dbname    string            `configKey:"mysql.dbname"`   // 数据库名
 	Username  string            `configKey:"mysql.username"` // 数据库用户名
-	Password  string            `configKey:"mysql.password"`  // 数据库密码
+	Password  string            `configKey:"mysql.password"` // 数据库密码
 	SubConfig map[string]string `prefix:"mysql.sub-config"`
 }
 
@@ -40,4 +41,5 @@ func main() {
 	})
 	fmt.Println(viper.AllSettings())
 	log.Println("finished initializing config")
+	ioc.RegistryBeans(nil, nil, nil)
 }

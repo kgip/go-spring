@@ -1,13 +1,22 @@
 package ioc
 
+type Priority interface {
+	GetPriority() int
+}
+
 // ContainerPreProcessor 容器前置处理器
-type ContainerPreProcessor func(c *Container)
+type ContainerPreProcessor interface {
+	PreProcess(c *Container)
+}
 
 // BeanPreProcessor bean的前置处理器
-type BeanPreProcessor func(c *Container, value interface{})
-
-type BeanPreProcessorInterface interface {
+type BeanPreProcessor interface {
 	PreProcess(c *Container)
+}
+
+type PriorityBeanPreProcessor interface {
+	BeanPreProcessor
+	Priority
 }
 
 // Initializer bean初始化器
@@ -16,11 +25,16 @@ type Initializer interface {
 }
 
 // BeanPostProcessor bean的后置处理器,bean初始化后执行
-type BeanPostProcessor func(c *Container, value interface{})
+type BeanPostProcessor interface {
+	PostProcess(c *Container, instance interface{})
+}
 
-type BeanPostProcessorInterface interface {
-	PostProcess(c *Container)
+type PriorityBeanPostProcessor interface {
+	BeanPostProcessor
+	Priority
 }
 
 // ContainerPostProcessor 容器后置处理器
-type ContainerPostProcessor func(c *Container)
+type ContainerPostProcessor interface {
+	PostProcess(c *Container)
+}

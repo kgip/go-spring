@@ -8,41 +8,34 @@ import (
 )
 
 type Configuration struct {
-	configs    map[string]interface{}
-	path       string
-	refresh    bool //是否刷新配置
-	configType string
-	logger     *log.Logger
-}
-
-func NewConfiguration(path string, refresh bool, configType string, logger *log.Logger) *Configuration {
-	config := &Configuration{path: path, refresh: refresh, configType: configType, logger: logger}
-	//加载配置
-	config.Load()
-	return config
+	Configs    map[string]interface{}
+	Path       string
+	Refresh    bool //是否刷新配置
+	ConfigType string
+	Logger     *log.Logger
 }
 
 func (configuration *Configuration) Load() {
 	viper := viper.New()
-	viper.SetConfigFile(configuration.path)
-	viper.SetConfigType(configuration.configType)
-	configuration.logger.Println("start load config")
+	viper.SetConfigFile(configuration.Path)
+	viper.SetConfigType(configuration.ConfigType)
+	configuration.Logger.Println("start load config")
 	if err := viper.ReadInConfig(); err != nil {
 		panic(err)
 	}
-	if configuration.refresh {
+	if configuration.Refresh {
 		viper.OnConfigChange(func(e fsnotify.Event) {
-			configuration.logger.Println("config file changed")
-			configuration.configs = viper.AllSettings()
+			configuration.Logger.Println("config file changed")
+			configuration.Configs = viper.AllSettings()
 		})
 	}
-	configuration.configs = viper.AllSettings()
-	configuration.logger.Println("finished initializing config")
+	configuration.Configs = viper.AllSettings()
+	configuration.Logger.Println("finished initializing config")
 }
 
 func (configuration *Configuration) GetConfig(configKey string) interface{} {
 	splitedKeys := strings.Split(configKey, ".")
-	configMap := configuration.configs
+	configMap := configuration.Configs
 	for i := 0; i < len(splitedKeys); i++ {
 		isMatched := false
 		for mapKey, value := range configMap {
