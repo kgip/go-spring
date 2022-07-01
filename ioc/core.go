@@ -1,7 +1,7 @@
 package ioc
 
 import (
-	"go-spring/configuration"
+	"github.com/kgip/go-spring/configuration"
 	"log"
 	"reflect"
 	"sort"
