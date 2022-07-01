@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/viper"
-	"go-spring/ioc"
-	"log"
+	"reflect"
 )
 
 type Mysql struct {
@@ -29,17 +26,14 @@ type MysqlAllConfig struct {
 }
 
 func main() {
-	viper := viper.New()
-	viper.SetConfigFile("./config.yaml")
-	viper.SetConfigType("yaml")
-	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
-	}
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Println("config file changed")
-		viper.AllSettings()
-	})
-	fmt.Println(viper.AllSettings())
-	log.Println("finished initializing config")
-	ioc.RegistryBeans(nil, nil, nil)
+	//ioc.RegistryBeans()
+	//ioc.SetConfigPath("./config.yaml")
+	//ioc.SetConfigType("yaml")
+	rt := reflect.TypeOf(Mysql{})
+	rv := reflect.ValueOf(Mysql{})
+	fmt.Println(&rv)
+	f := rt.Field(0)
+	fmt.Println(f.Name)
+	fmt.Println(f.Anonymous)
+	fmt.Println(f.Tag.Get("prefix"))
 }

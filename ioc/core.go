@@ -21,45 +21,49 @@ func init() {
 	ioc = NewContainer()
 }
 
-func RegistryBeans(beans ...*Bean) *Container {
+func RegistryBeans(beans ...*Bean) {
 	ioc.AddBeans(beans...)
-	return ioc
 }
 
-func SetConfigPath(path string) *Container {
-	ioc.Configuration.Path = path
+func SetConfigPath(path string) {
+	ioc.configuration.Path = path
 }
 
 func SetConfigType(configType string) {
-	ioc.Configuration.ConfigType = configType
+	ioc.configuration.ConfigType = configType
 }
 
 // Container ioc容器
 type Container struct {
 	beans                    map[string]*Bean
-	Configuration            *configuration.Configuration
+	configuration            *configuration.Configuration
 	globalBeanPreProcessors  []BeanPreProcessor
 	globalBeanPostProcessors []BeanPostProcessor
 	containerPreProcessors   []ContainerPreProcessor
 	containerPostProcessors  []ContainerPostProcessor
 	isInited                 bool //是否已经初始化
-	Logger                   *log.Logger
+	logger                   *log.Logger
 	lock                     *sync.Mutex
+	rv                       *reflect.Value
 }
 
 func NewContainer() *Container {
-	return &Container{
+	logger := log.Default()
+	c := &Container{
 		beans:         map[string]*Bean{},
 		lock:          &sync.Mutex{},
-		Configuration: &configuration.Configuration{Path: defaultConfigPath, ConfigType: defaultConfigType, Logger: log.Default()},
-		Logger:        log.Default()}
+		configuration: &configuration.Configuration{Path: defaultConfigPath, ConfigType: defaultConfigType, Logger: logger},
+		logger:        logger}
+	rv := reflect.ValueOf(c)
+	c.rv = &rv
+	return c
 }
 
 // Init 容器初始化方法
 func (c *Container) Init() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.Logger.Println("Ioc container start init....")
+	c.logger.Println("Ioc container start init....")
 	if c.containerPreProcessors != nil {
 		sort.Slice(c.containerPreProcessors, func(i, j int) bool {
 			return c.getProcessorPriority(c.containerPreProcessors[i]) > c.getProcessorPriority(c.containerPreProcessors[j])
@@ -69,14 +73,14 @@ func (c *Container) Init() {
 		}
 	}
 	//加载配置
-	c.Logger.Printf("Start loading the configuration from the path %s", c.Configuration.Path)
-	c.Configuration.Load()
-	c.Logger.Println("Load configuration complete")
+	c.logger.Printf("Start loading the configuration from the path %s", c.configuration.Path)
+	c.configuration.Load()
+	c.logger.Println("Load configuration complete")
 	//实例化单例bean
 	for name := range c.beans {
 		c.GetBeanInstanceByName(name)
 	}
-	c.Logger.Println("Ioc container instance beans complete")
+	c.logger.Println("Ioc container instance beans complete")
 	c.isInited = true
 	if c.containerPostProcessors != nil {
 		sort.Slice(c.containerPostProcessors, func(i, j int) bool {
@@ -86,7 +90,7 @@ func (c *Container) Init() {
 			processor.PostProcess(c)
 		}
 	}
-	c.Logger.Println("Ioc container init complete")
+	c.logger.Println("Ioc container init complete")
 }
 
 // GetBeanInstanceByName 获取bean
@@ -210,7 +214,7 @@ func (c *Container) AddContainerPostProcessor(processor ContainerPostProcessor) 
 
 // InstanceBean 实例化bean
 func (c *Container) InstanceBean(bean *Bean) interface{} {
-	c.Logger.Printf("start create bean:%s", bean.name)
+	c.logger.Printf("start create bean:%s", bean.name)
 	//1.调用前置处理器
 	if bean.beanPreProcessors != nil {
 		for _, processor := range bean.beanPreProcessors {
@@ -227,6 +231,11 @@ func (c *Container) InstanceBean(bean *Bean) interface{} {
 			in := method.Type().In(i)
 			isPtr := in.Kind() == reflect.Ptr
 			if isPtr {
+				//如果接收容器指针作为参数，则将参数设置为容器指针
+				if c.rv.Type().AssignableTo(in) {
+					args[i] = *c.rv
+					continue
+				}
 				in = in.Elem()
 			}
 			if in.Kind() == reflect.Struct {
@@ -265,7 +274,7 @@ func (c *Container) InstanceBean(bean *Bean) interface{} {
 			processor.PostProcess(c, bean.instance)
 		}
 	}
-	c.Logger.Printf("create bean:%s finished", bean.name)
+	c.logger.Printf("create bean:%s finished", bean.name)
 	return bean.instance
 }
 

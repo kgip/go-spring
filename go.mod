@@ -1,4 +1,4 @@
-module go-spring
+module github.com/kgip/go-spring
 
 go 1.16
 
