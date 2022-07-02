@@ -2,8 +2,8 @@ package test
 
 import (
 	"fmt"
-	_ "go-spring/test/a"
-	_ "go-spring/test/b"
+	_ "github.com/kgip/go-spring/test/a"
+	_ "github.com/kgip/go-spring/test/b"
 	"reflect"
 	"sort"
 	"testing"
@@ -78,4 +78,67 @@ func TestInterface(t *testing.T) {
 	if ok {
 		writer.Write()
 	}
+}
+
+type User struct {
+	Id   int
+	Name string
+}
+
+type Mapper[T any] struct{}
+
+func (Mapper[T]) List() []*T {
+	a := new(T)
+	rv := reflect.TypeOf(a).Elem()
+	for i := 0; i < rv.NumField(); i++ {
+		fmt.Println(rv.Field(i).Name)
+	}
+	return []*T{a, a}
+}
+
+type UserService struct {
+	UserMapper Mapper[User]
+	Booker     *Book
+}
+
+func TestName(t *testing.T) {
+	userService := UserService{}
+	rv := reflect.ValueOf(&userService)
+	t.Log(rv.Elem().Field(0).CanSet())
+	frv := reflect.New(rv.Elem().Field(0).Type())
+
+	//var mapper = &Mapper[User]{}
+	//prv := reflect.ValueOf(mapper)
+	//rt := prv.Type()
+	//value := reflect.New(rt.Elem())
+	//t.Log(prv.Elem().CanAddr())
+	//t.Log(prv.CanAddr())
+	//
+	rv.Elem().Field(0).Set(frv.Elem())
+	t.Log(userService.UserMapper.List())
+	//if userMapper, ok := value.(*Mapper[User]); ok {
+	//	list := userMapper.List()
+	//	for _, user := range list {
+	//		t.Log((*user).Id)
+	//	}
+	//}
+}
+
+func TestReflect(t *testing.T) {
+	a := 1
+	rv := reflect.ValueOf(&a)
+	t.Log(rv.Elem().CanAddr())
+}
+
+func TestPtr(t *testing.T) {
+	var a = 1
+	var ptr interface{} = &a
+	rv := reflect.ValueOf(ptr)
+	t.Log(rv.Elem().Interface())
+	//var ptr1 = &ptr
+	//var ptr2 = &ptr1
+	//var rv = reflect.ValueOf(ptr2)
+	//t.Log(rv.Elem().Kind())
+	//t.Log(rv.Elem().Elem().Kind())
+	//t.Log(rv.Elem().Elem().Elem().Kind())
 }
