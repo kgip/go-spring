@@ -19,6 +19,14 @@ func RegisterModules(registers ...ModuleRegister) {
 }
 
 func verifyBean(bean *core.Bean) bool {
+	//bean名称不能为空
+	if bean.GetName() == "" {
+		return false
+	}
+	//model和factoryMethod不能同时为空
+	if bean.GetModel() == nil && bean.GetFactoryMethod() == nil {
+		return false
+	}
 	return true
 }
 
@@ -31,6 +39,28 @@ func RegisterBeans(beans ...*core.Bean) {
 	for _, bean := range beans {
 		container.AddBean(bean)
 	}
+}
+
+func registerBeans(action func(o interface{}) *core.Bean, o ...interface{}) {
+	if len(o) > 0 {
+		beans := make([]*core.Bean, len(o))
+		for i := 0; i < len(o); i++ {
+			beans[i] = action(o)
+		}
+		RegisterBeans(beans...)
+	}
+}
+
+func RegisterSimpleBean(model ...interface{}) {
+	registerBeans(func(o interface{}) *core.Bean {
+		return core.NewBean(model)
+	}, model...)
+}
+
+func RegisterSimpleFactoryBean(factoryMethod ...interface{}) {
+	registerBeans(func(o interface{}) *core.Bean {
+		return core.NewFactoryBean(factoryMethod)
+	}, factoryMethod...)
 }
 
 func RegisterBeanPreProcessors(processors ...core.BeanPreProcessor) {
@@ -70,6 +100,9 @@ func RegisterPostProcessors(processors ...core.ContainerPostProcessor) {
 }
 
 func SetConfiguration(provider configuration.Provider) {
+	if provider == nil {
+		panic(errors.NilError)
+	}
 	container.SetConfiguration(provider)
 }
 

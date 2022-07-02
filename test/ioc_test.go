@@ -142,3 +142,13 @@ func TestPtr(t *testing.T) {
 	//t.Log(rv.Elem().Elem().Kind())
 	//t.Log(rv.Elem().Elem().Elem().Kind())
 }
+
+type Provider func()
+
+func (Provider) GetBeanName() string {
+	return "aaa"
+}
+
+func TestProvider(t *testing.T) {
+
+}

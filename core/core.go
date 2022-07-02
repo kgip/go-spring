@@ -48,8 +48,7 @@ func NewContainer(configurationProvider configuration.Provider, logger *log.Logg
 // Init 容器初始化方法
 func (c *Container) Init() {
 	once.Do(func() {
-		c.lock.Lock()
-		defer c.lock.Unlock()
+		c.isInited = true
 		c.logger.Println("Ioc container start init....")
 		if c.containerPreProcessors != nil {
 			sort.Slice(c.containerPreProcessors, func(i, j int) bool {
@@ -77,7 +76,6 @@ func (c *Container) Init() {
 				processor.PostProcess(c)
 			}
 		}
-		c.isInited = true
 		c.logger.Println("Ioc container init complete")
 	})
 }
@@ -117,14 +115,18 @@ func (c *Container) SetConfiguration(provider configuration.Provider) {
 	c.configuration = provider
 }
 
-// AddBean 添加bean
-func (c *Container) AddBean(bean *Bean) bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+func (c *Container) checkInited() {
 	if c.isInited {
 		panic(errors.ContainerUpdateError)
 	}
-	if c.beans[bean.name] != nil && c.beans[bean.name].priority > bean.priority {
+}
+
+// AddBean 添加bean
+func (c *Container) AddBean(bean *Bean) bool {
+	c.checkInited()
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.beans[bean.name] != nil && GetPriority(c.beans[bean.name]) > GetPriority(bean) {
 		return false
 	}
 	if c.globalBeanPreProcessors != nil {
@@ -152,11 +154,9 @@ func (c *Container) AddBean(bean *Bean) bool {
 }
 
 func (c *Container) AddBeanPreProcessor(processor BeanPreProcessor) {
+	c.checkInited()
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if c.isInited {
-		panic(errors.ContainerUpdateError)
-	}
 	if processor != nil {
 		if c.globalBeanPreProcessors == nil {
 			c.globalBeanPreProcessors = []BeanPreProcessor{processor}
@@ -167,11 +167,9 @@ func (c *Container) AddBeanPreProcessor(processor BeanPreProcessor) {
 }
 
 func (c *Container) AddBeanPostProcessor(processor BeanPostProcessor) {
+	c.checkInited()
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if c.isInited {
-		panic(errors.ContainerUpdateError)
-	}
 	if processor != nil {
 		if c.globalBeanPostProcessors == nil {
 			c.globalBeanPostProcessors = []BeanPostProcessor{processor}
@@ -182,11 +180,9 @@ func (c *Container) AddBeanPostProcessor(processor BeanPostProcessor) {
 }
 
 func (c *Container) AddContainerPreProcessor(processor ContainerPreProcessor) {
+	c.checkInited()
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if c.isInited {
-		panic(errors.ContainerUpdateError)
-	}
 	if processor != nil {
 		if c.containerPreProcessors == nil {
 			c.containerPreProcessors = []ContainerPreProcessor{processor}
@@ -197,11 +193,9 @@ func (c *Container) AddContainerPreProcessor(processor ContainerPreProcessor) {
 }
 
 func (c *Container) AddContainerPostProcessor(processor ContainerPostProcessor) {
+	c.checkInited()
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if c.isInited {
-		panic(errors.ContainerUpdateError)
-	}
 	if processor != nil {
 		if c.containerPostProcessors == nil {
 			c.containerPostProcessors = []ContainerPostProcessor{processor}
@@ -329,21 +323,50 @@ type Bean struct {
 	lock               *sync.Mutex
 }
 
-func NewBean() *Bean {
-	return &Bean{}
+func NewBean(model interface{}) *Bean {
+	bean := &Bean{lock: &sync.Mutex{}, isSingleton: true}
+	bean.SetModel(model)
+	if provider, ok := bean.model.(BeanNameProvider); ok {
+		bean.SetName(provider.GetBeanName())
+	}
+	if bean.name == "" {
+		bean.SetName(reflect.TypeOf(bean.model).Elem().Name())
+	}
+	return bean
 }
 
-func (bean *Bean) SetName(name string) {
+func NewFactoryBean(factoryMethod interface{}) *Bean {
+	bean := &Bean{lock: &sync.Mutex{}, isSingleton: true}
+	bean.SetFactoryMethod(factoryMethod)
+	if provider, ok := bean.factoryMethod.(BeanNameProvider); ok {
+		bean.SetName(provider.GetBeanName())
+	}
+	if bean.name == "" {
+		rt := reflect.TypeOf(bean.factoryMethod).In(0)
+		if rt.Kind() == reflect.Ptr {
+			bean.SetName(rt.Elem().Name())
+		} else {
+			bean.SetName(rt.Name())
+		}
+	}
+	return bean
+}
+
+func (bean *Bean) SetName(name string) *Bean {
 	if name != "" {
 		bean.name = name
+	} else {
+		panic(errors.NameEmptyError)
 	}
+	return bean
 }
 
-func (bean *Bean) SetPriority(priority int) {
+func (bean *Bean) SetPriority(priority int) *Bean {
 	bean.priority = priority
+	return bean
 }
 
-func (bean *Bean) SetModel(model interface{}) {
+func (bean *Bean) SetModel(model interface{}) *Bean {
 	if model == nil {
 		panic(errors.NilError)
 	}
@@ -356,13 +379,17 @@ func (bean *Bean) SetModel(model interface{}) {
 	} else {
 		bean.model = model
 	}
+	return bean
 }
 
-func (bean *Bean) SetFactoryMethod(method interface{}) {
+func (bean *Bean) SetFactoryMethod(method interface{}) *Bean {
 	if method == nil {
 		panic(errors.NilError)
 	}
 	rt := reflect.TypeOf(method)
+	if rt.Kind() != reflect.Func {
+		panic(errors.TypeNotMatchError)
+	}
 	if rt.NumIn() != 1 {
 		panic(errors.FactoryMethodReturnsError)
 	} else {
@@ -372,13 +399,15 @@ func (bean *Bean) SetFactoryMethod(method interface{}) {
 		}
 	}
 	bean.factoryMethod = method
+	return bean
 }
 
-func (bean *Bean) SetIsSingleton(isSingleton bool) {
+func (bean *Bean) SetIsSingleton(isSingleton bool) *Bean {
 	bean.isSingleton = isSingleton
+	return bean
 }
 
-func (bean *Bean) AddBeanPreProcessor(processor BeanPreProcessor) {
+func (bean *Bean) AddBeanPreProcessor(processor BeanPreProcessor) *Bean {
 	bean.lock.Lock()
 	defer bean.lock.Unlock()
 	if processor != nil {
@@ -388,9 +417,10 @@ func (bean *Bean) AddBeanPreProcessor(processor BeanPreProcessor) {
 			bean.beanPreProcessors = append(bean.beanPreProcessors, processor)
 		}
 	}
+	return bean
 }
 
-func (bean *Bean) AddBeanPostProcessor(processor BeanPostProcessor) {
+func (bean *Bean) AddBeanPostProcessor(processor BeanPostProcessor) *Bean {
 	bean.lock.Lock()
 	defer bean.lock.Unlock()
 	if processor != nil {
@@ -400,4 +430,21 @@ func (bean *Bean) AddBeanPostProcessor(processor BeanPostProcessor) {
 			bean.beanPostProcessors = append(bean.beanPostProcessors, processor)
 		}
 	}
+	return bean
+}
+
+func (bean *Bean) GetName() string {
+	return bean.name
+}
+
+func (bean *Bean) GetModel() interface{} {
+	return bean.model
+}
+
+func (bean *Bean) GetFactoryMethod() interface{} {
+	return bean.factoryMethod
+}
+
+func (bean *Bean) GetPriority() int {
+	return bean.priority
 }
