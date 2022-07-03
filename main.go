@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"reflect"
+	"github.com/kgip/go-spring/ioc"
 )
 
 type Mysql struct {
@@ -10,10 +9,10 @@ type Mysql struct {
 }
 
 type MysqlConfig struct {
-	Path      string            `configKey:"path"`      // 服务器地址:端口
-	Dbname    string            `configKey:"dbname"`    // 数据库名
-	Username  string            `configKey:"username."` // 数据库用户名
-	Password  string            `configKey:"password"`  // 数据库密码
+	Path      string            `configKey:"path"`     // 服务器地址:端口
+	Dbname    string            `configKey:"dbname"`   // 数据库名
+	Username  string            `configKey:"username"` // 数据库用户名
+	Password  string            `configKey:"password"` // 数据库密码
 	SubConfig map[string]string `prefix:"sub-config"`
 }
 
@@ -25,15 +24,13 @@ type MysqlAllConfig struct {
 	SubConfig map[string]string `prefix:"mysql.sub-config"`
 }
 
+func (MysqlAllConfig) ConfigurationPrefix() string {
+	return "mysql"
+}
+
 func main() {
-	//ioc.RegistryBeans()
-	//ioc.SetConfigPath("./config.yaml")
-	//ioc.SetConfigType("yaml")
-	rt := reflect.TypeOf(Mysql{})
-	rv := reflect.ValueOf(Mysql{})
-	fmt.Println(&rv)
-	f := rt.Field(0)
-	fmt.Println(f.Name)
-	fmt.Println(f.Anonymous)
-	fmt.Println(f.Tag.Get("prefix"))
+	ioc.RegisterModules()
+	ioc.RegisterSimpleBean()
+	ioc.RegisterSimpleFactoryBean()
+	ioc.Start()
 }

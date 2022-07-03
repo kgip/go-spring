@@ -135,3 +135,7 @@ func SetConfigRefresh(refresh bool) bool {
 		config.SetRefresh(refresh)
 	})
 }
+
+func Start() {
+	container.Init()
+}
