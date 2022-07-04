@@ -14,8 +14,9 @@ const (
 
 	beanNameTag = "name"
 
-	configPrefixTag = "prefix"
-	configKeyTag    = "key"
+	configPrefixTag    = "prefix"
+	configKeyTag       = "key"
+	configKeySplitChar = ";"
 )
 
 var (
@@ -75,7 +76,7 @@ type ConfigFieldHandler interface {
 type DefaultConfigFieldHandler struct{}
 
 func (handler *DefaultConfigFieldHandler) resolveConfigKey(configKey string) map[string]interface{} {
-	strings.Split(configKey, " ")
+	strings.Split(configKey, configKeySplitChar)
 	return nil
 }
 
