@@ -1,12 +1,31 @@
 package error
 
-import "errors"
+import (
+	"fmt"
+)
+
+type IocError struct {
+	message string
+	detail  string
+}
+
+func (e *IocError) Error() string {
+	return fmt.Sprintf(`{"message": "%s", "detail": "%s"}`, e.message, e.detail)
+}
+
+func (e IocError) Detail(detail string) IocError {
+	e.detail = detail
+	return e
+}
 
 var (
-	TypeNotMatchError         = errors.New("Parameter type mismatch")
-	NilError                  = errors.New("Parameter nil")
-	FactoryMethodReturnsError = errors.New("The number of return values of the factory method is not unique")
-	ContainerUpdateError      = errors.New("The container has been initialized and cannot be updated")
-	BeanIllegalError          = errors.New("Invalid bean information")
-	NameEmptyError            = errors.New("Bean name can't be empty")
+	TypeNotMatchError         = &IocError{message: "Parameter type mismatch"}
+	NilError                  = &IocError{message: "Parameter nil"}
+	FactoryMethodReturnsError = &IocError{message: "The number of return values of the factory method is not unique"}
+	ContainerUpdateError      = &IocError{message: "The container has been initialized and cannot be updated"}
+	BeanIllegalError          = &IocError{message: "Invalid bean information"}
+	NameEmptyError            = &IocError{message: "Bean name can't be empty"}
+	CircularReferenceError    = &IocError{message: "Cannot depend on the factory bean being created"}
+	UnknownBeanNameError      = &IocError{message: "Unknown bean name"}
+	ConfigKeyError            = &IocError{message: "config key error"}
 )

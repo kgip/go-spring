@@ -1,18 +1,16 @@
 package main
 
-import (
-	"github.com/kgip/go-spring/ioc"
-)
+import "github.com/kgip/go-spring/ioc"
 
 type Mysql struct {
 	MysqlConfig `prefix:"mysql"`
 }
 
 type MysqlConfig struct {
-	Path      string            `configKey:"path"`     // 服务器地址:端口
-	Dbname    string            `configKey:"dbname"`   // 数据库名
-	Username  string            `configKey:"username"` // 数据库用户名
-	Password  string            `configKey:"password"` // 数据库密码
+	Path      string            `configKey:"value:path default:10.4.48.44:3306"` // 服务器地址:端口
+	Dbname    string            `configKey:"dbname"`                             // 数据库名
+	Username  string            `configKey:"username"`                           // 数据库用户名
+	Password  string            `configKey:"password"`                           // 数据库密码
 	SubConfig map[string]string `prefix:"sub-config"`
 }
 

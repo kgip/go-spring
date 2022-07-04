@@ -83,6 +83,9 @@ func (c *Container) Init() {
 // GetBeanInstanceByName 获取bean
 func (c *Container) GetBeanInstanceByName(name string) interface{} {
 	if bean := c.beans[name]; bean != nil {
+		if bean.isCreating && bean.factoryMethod != nil {
+			panic(errors.CircularReferenceError)
+		}
 		if bean.isSingleton && bean.instance != nil {
 			return bean.instance
 		}
@@ -207,7 +210,8 @@ func (c *Container) AddContainerPostProcessor(processor ContainerPostProcessor) 
 
 // instanceBean 实例化bean
 func (c *Container) instanceBean(bean *Bean) interface{} {
-	c.logger.Printf("start create bean:%s", bean.name)
+	c.logger.Printf("start creating bean:%s", bean.name)
+	bean.isCreating = true
 	//调用前置处理器
 	if bean.beanPreProcessors != nil {
 		for _, processor := range bean.beanPreProcessors {
@@ -226,7 +230,7 @@ func (c *Container) instanceBean(bean *Bean) interface{} {
 			if in.Kind() == reflect.Ptr && c.rv.Type().AssignableTo(in) {
 				args[i] = *c.rv
 			} else {
-				args[i] = reflect.ValueOf(c.getInstance(in))
+				args[i] = reflect.ValueOf(c.GetInstance(in))
 			}
 		}
 		//调用工厂方法
@@ -252,13 +256,17 @@ func (c *Container) instanceBean(bean *Bean) interface{} {
 			processor.PostProcess(c, bean.instance)
 		}
 	}
-	c.logger.Printf("create bean:%s finished", bean.name)
+	c.logger.Printf("create bean:%s complete", bean.name)
+	bean.isCreating = false
 	return bean.instance
 }
 
-func (c *Container) getInstance(rt reflect.Type) interface{} {
+func (c *Container) GetInstance(rt reflect.Type) interface{} {
 	if rt.Kind() == reflect.Ptr {
-		instance := c.getInstance(rt.Elem())
+		instance := c.GetInstance(rt.Elem())
+		if instance == nil {
+			return nil
+		}
 		return &instance
 	} else {
 		return c.instanceByType(rt)
@@ -293,18 +301,8 @@ func (c *Container) instanceByType(rt reflect.Type) interface{} {
 		return 0.0
 	case reflect.Bool:
 		return false
-	case reflect.Slice:
-		return reflect.MakeSlice(rt, 0, 0).Interface()
-	case reflect.Map:
-		return reflect.MakeMap(rt).Interface()
 	case reflect.Array:
 		return reflect.New(rt).Elem().Interface()
-	case reflect.Chan:
-		return reflect.MakeChan(rt, 0).Interface()
-	case reflect.Func:
-		return reflect.MakeFunc(rt, func(args []reflect.Value) (results []reflect.Value) {
-			return nil
-		}).Interface()
 	}
 	return nil
 }

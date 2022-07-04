@@ -6,6 +6,7 @@ import (
 	_ "github.com/kgip/go-spring/test/b"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -85,27 +86,27 @@ type User struct {
 	Name string
 }
 
-type Mapper[T any] struct{}
-
-func (Mapper[T]) List() []*T {
-	a := new(T)
-	rv := reflect.TypeOf(a).Elem()
-	for i := 0; i < rv.NumField(); i++ {
-		fmt.Println(rv.Field(i).Name)
-	}
-	return []*T{a, a}
-}
-
-type UserService struct {
-	UserMapper Mapper[User]
-	Booker     *Book
-}
+//type Mapper[T any] struct{}
+//
+//func (Mapper[T]) List() []*T {
+//	a := new(T)
+//	rv := reflect.TypeOf(a).Elem()
+//	for i := 0; i < rv.NumField(); i++ {
+//		fmt.Println(rv.Field(i).Name)
+//	}
+//	return []*T{a, a}
+//}
+//
+//type UserService struct {
+//	UserMapper Mapper[User]
+//	Booker     *Book
+//}
 
 func TestName(t *testing.T) {
-	userService := UserService{}
-	rv := reflect.ValueOf(&userService)
-	t.Log(rv.Elem().Field(0).CanSet())
-	frv := reflect.New(rv.Elem().Field(0).Type())
+	//userService := UserService{}
+	//rv := reflect.ValueOf(&userService)
+	//t.Log(rv.Elem().Field(0).CanSet())
+	//frv := reflect.New(rv.Elem().Field(0).Type())
 
 	//var mapper = &Mapper[User]{}
 	//prv := reflect.ValueOf(mapper)
@@ -114,8 +115,8 @@ func TestName(t *testing.T) {
 	//t.Log(prv.Elem().CanAddr())
 	//t.Log(prv.CanAddr())
 	//
-	rv.Elem().Field(0).Set(frv.Elem())
-	t.Log(userService.UserMapper.List())
+	//rv.Elem().Field(0).Set(frv.Elem())
+	//t.Log(userService.UserMapper.List())
 	//if userMapper, ok := value.(*Mapper[User]); ok {
 	//	list := userMapper.List()
 	//	for _, user := range list {
@@ -143,12 +144,27 @@ func TestPtr(t *testing.T) {
 	//t.Log(rv.Elem().Elem().Elem().Kind())
 }
 
-type Provider func()
-
-func (Provider) GetBeanName() string {
-	return "aaa"
+type A struct {
+	b    *B
+	name string
 }
 
-func TestProvider(t *testing.T) {
+type B struct {
+	a    *A
+	name string
+}
 
+func TestCircularReference(t *testing.T) {
+	var a *A
+	var b *B
+	a = &A{name: "AAAAA"}
+	b = &B{name: "BBBBB"}
+	b.a = a
+	a.b = b
+	t.Log(a, b)
+}
+
+func TestB(t *testing.T) {
+	split := strings.Split("a    b", "")
+	t.Log(len(split))
 }

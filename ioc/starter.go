@@ -21,7 +21,7 @@ func init() {
 	configurationProvider := configuration.NewConfiguration(defaultConfigPath, defaultConfigType, refreshConfig, logger)
 	container = core.NewContainer(configurationProvider, logger)
 	RegisterBeanPreProcessors()
-	RegisterBeanPostProcessors()
+	RegisterBeanPostProcessors(&core.AssignBeanPostProcessor{})
 	RegisterPreProcessors()
 	RegisterPostProcessors()
 }
