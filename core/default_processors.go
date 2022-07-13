@@ -14,12 +14,17 @@ const (
 
 	beanNameTag = "name"
 
-	configPrefixTag    = "prefix"
-	configKeyTag       = "key"
-	configKeySplitChar = ";"
+	configPrefixTag          = "prefix"
+	configKeyTag             = "key"
+	configKeySplitChar       = " "
+	configKeySubKeySplitChar = "="
+
+	configKeySubKeyValue   = "value"
+	configKeySubKeyDefault = "default"
 )
 
 var (
+	configKeySubKeys = map[string]bool{configKeySubKeyValue: true, configKeySubKeyDefault: true}
 	instanceHandlers = []InstanceHandler{
 		&ConfigInstanceHandler{
 			fieldHandler: &DefaultConfigFieldHandler{},
@@ -75,21 +80,61 @@ type ConfigFieldHandler interface {
 
 type DefaultConfigFieldHandler struct{}
 
-func (handler *DefaultConfigFieldHandler) resolveConfigKey(configKey string) map[string]interface{} {
-	strings.Split(configKey, configKeySplitChar)
-	return nil
+func (handler *DefaultConfigFieldHandler) resolveConfigKeySubKey(keyValueStr string, index int) (key, value string) {
+	key = keyValueStr[:index]
+	if configKeySubKeys[key] {
+		value = keyValueStr[index+1:]
+	} else {
+		panic(errors.UnknownConfigKeySubKeyError.Detail(fmt.Sprintf("unknown sub key '%s'", key)))
+	}
+	return
+}
+
+//configKey规则
+//1.只有单独一个key，无需添加value:前缀 `configKey:"path"`
+//2.多个key，需求添加子key前缀，多个key之间用空格隔开 `configKey:"value=path default=10.4.68.144:3306"`
+func (handler *DefaultConfigFieldHandler) resolveConfigKey(configKey string) map[string]string {
+	splits := strings.Split(configKey, configKeySplitChar)
+	var keyValues []string
+	var keyValuesMap = map[string]string{}
+	//去除空格符
+	for _, split := range splits {
+		if split != " " {
+			keyValues = append(keyValues, split)
+		}
+	}
+	if len(keyValues) <= 0 {
+	} else if len(keyValues) == 1 {
+		if index := strings.Index(keyValues[0], configKeySubKeySplitChar); index > -1 {
+			k, v := handler.resolveConfigKeySubKey(keyValues[0], index)
+			keyValuesMap[k] = v
+		} else {
+			keyValuesMap[configKeySubKeyValue] = keyValues[0]
+		}
+	} else { //more than one sub key
+		for _, keyValue := range keyValues {
+			if index := strings.Index(keyValue, configKeySubKeySplitChar); index > -1 {
+				k, v := handler.resolveConfigKeySubKey(keyValue, index)
+				keyValuesMap[k] = v
+			} else {
+				panic(errors.ConfigKeySubKeyResolveError.Detail(fmt.Sprintf("error key '%s'", keyValue)))
+			}
+		}
+	}
+	return keyValuesMap
 }
 
 func (handler *DefaultConfigFieldHandler) Handle(c configuration.Provider, field *reflect.StructField, prefix string) {
 	var configKey string
-	var defaultValue interface{}
+	var defaultValue string
 	var configPrefix string
 	if key, ok := field.Tag.Lookup(configKeyTag); ok {
 		if key == "" {
-			panic(errors.ConfigKeyError.Detail(fmt.Sprintf("config key %s can't be empty", field.Name)))
+			panic(errors.ConfigKeyError.Detail(fmt.Sprintf("config key of '%s' can't be empty", field.Name)))
 		}
 		keyMap := handler.resolveConfigKey(key)
-		configKey = prefix + "." + key
+		defaultValue = keyMap[configKeySubKeyDefault]
+		configKey = prefix + "." + keyMap[configKeySubKeyValue]
 	} else if prefixTagValue, ok := field.Tag.Lookup(configPrefixTag); ok {
 		configPrefix = prefix + "." + prefixTagValue
 	} else {

@@ -165,6 +165,11 @@ func TestCircularReference(t *testing.T) {
 }
 
 func TestB(t *testing.T) {
-	split := strings.Split("a    b", "")
-	t.Log(len(split))
+	var splits []string
+	splits = append(splits, "aa")
+	t.Log(splits)
+	str := "value=path"
+	index := strings.Index(str, "=")
+	t.Log(str[:index])
+	t.Log(str[index+1:])
 }

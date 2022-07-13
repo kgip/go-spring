@@ -7,7 +7,7 @@ type Mysql struct {
 }
 
 type MysqlConfig struct {
-	Path      string            `configKey:"value:path;default:10.4.48.44:3306"` // 服务器地址:端口
+	Path      string            `configKey:"value:path default:10.4.48.44:3306"` // 服务器地址:端口
 	Dbname    string            `configKey:"dbname"`                             // 数据库名
 	Username  string            `configKey:"username"`                           // 数据库用户名
 	Password  string            `configKey:"password"`                           // 数据库密码
@@ -15,10 +15,10 @@ type MysqlConfig struct {
 }
 
 type MysqlAllConfig struct {
-	Path      string            `configKey:"mysql.path"`     // 服务器地址:端口
-	Dbname    string            `configKey:"mysql.dbname"`   // 数据库名
-	Username  string            `configKey:"mysql.username"` // 数据库用户名
-	Password  string            `configKey:"mysql.password"` // 数据库密码
+	Path      string            `configKey:"value:mysql.path default:10.4.68.144:3306"` // 服务器地址:端口
+	Dbname    string            `configKey:"mysql.dbname"`                              // 数据库名
+	Username  string            `configKey:"mysql.username"`                            // 数据库用户名
+	Password  string            `configKey:"mysql.password"`                            // 数据库密码
 	SubConfig map[string]string `prefix:"mysql.sub-config"`
 }
 

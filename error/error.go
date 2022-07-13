@@ -19,13 +19,15 @@ func (e IocError) Detail(detail string) IocError {
 }
 
 var (
-	TypeNotMatchError         = &IocError{message: "Parameter type mismatch"}
-	NilError                  = &IocError{message: "Parameter nil"}
-	FactoryMethodReturnsError = &IocError{message: "The number of return values of the factory method is not unique"}
-	ContainerUpdateError      = &IocError{message: "The container has been initialized and cannot be updated"}
-	BeanIllegalError          = &IocError{message: "Invalid bean information"}
-	NameEmptyError            = &IocError{message: "Bean name can't be empty"}
-	CircularReferenceError    = &IocError{message: "Cannot depend on the factory bean being created"}
-	UnknownBeanNameError      = &IocError{message: "Unknown bean name"}
-	ConfigKeyError            = &IocError{message: "config key error"}
+	TypeNotMatchError           = &IocError{message: "Parameter type mismatch"}
+	NilError                    = &IocError{message: "Parameter nil"}
+	FactoryMethodReturnsError   = &IocError{message: "The number of return values of the factory method is not unique"}
+	ContainerUpdateError        = &IocError{message: "The container has been initialized and cannot be updated"}
+	BeanIllegalError            = &IocError{message: "Invalid bean information"}
+	NameEmptyError              = &IocError{message: "Bean name can't be empty"}
+	CircularReferenceError      = &IocError{message: "Cannot depend on the factory bean being created"}
+	UnknownBeanNameError        = &IocError{message: "Unknown bean name"}
+	ConfigKeyError              = &IocError{message: "config key error"}
+	UnknownConfigKeySubKeyError = &IocError{message: "unknown config key sub key"}
+	ConfigKeySubKeyResolveError = &IocError{message: "config key sub key resolve failed"}
 )
