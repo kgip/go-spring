@@ -16,6 +16,7 @@ const (
 
 	configPrefixTag          = "prefix"
 	configKeyTag             = "key"
+	pathSplitChar            = "."
 	configKeySplitChar       = " "
 	configKeySubKeySplitChar = "="
 
@@ -133,19 +134,28 @@ func (handler *DefaultConfigFieldHandler) Handle(c configuration.Provider, field
 			panic(errors.ConfigKeyError.Detail(fmt.Sprintf("config key of '%s' can't be empty", field.Name)))
 		}
 		keyMap := handler.resolveConfigKey(key)
-		defaultValue = keyMap[configKeySubKeyDefault]
-		configKey = prefix + "." + keyMap[configKeySubKeyValue]
-	} else if prefixTagValue, ok := field.Tag.Lookup(configPrefixTag); ok {
-		configPrefix = prefix + "." + prefixTagValue
-	} else {
-		if field.Anonymous {
-
-		} else {
-			configKey = prefix + "." + field.Name
+		if keyMap[configKeySubKeyDefault] != "" {
+			defaultValue = keyMap[configKeySubKeyDefault]
 		}
+		if keyMap[configKeySubKeyValue] != "" {
+			configKey = prefix + pathSplitChar + keyMap[configKeySubKeyValue]
+		} else {
+			configKey = prefix + pathSplitChar + field.Name
+		}
+	} else if prefixTagValue, ok := field.Tag.Lookup(configPrefixTag); ok {
+		if prefixTagValue != "" {
+			configPrefix = prefix + pathSplitChar + prefixTagValue
+		} else {
+			configPrefix = prefix
+		}
+	} else {
+		configKey = prefix + pathSplitChar + field.Name
 	}
+	fmt.Println(configPrefix, defaultValue)
 	if configKey != "" {
 		if value := c.GetConfig(configKey); value == nil {
+			panic(errors.UnknownConfigKeyError.Detail(configKey))
+		} else {
 
 		}
 	}

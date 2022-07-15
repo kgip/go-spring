@@ -173,3 +173,16 @@ func TestB(t *testing.T) {
 	t.Log(str[:index])
 	t.Log(str[index+1:])
 }
+
+type C struct {
+	int
+}
+
+func TestAnon(t *testing.T) {
+	c := C{}
+	rt := reflect.TypeOf(c)
+	if rt.Field(0).Anonymous {
+		t.Log(rt.Field(0).Name)
+		t.Log(rt.Field(0).Type.Name())
+	}
+}

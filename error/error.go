@@ -28,6 +28,7 @@ var (
 	CircularReferenceError      = &IocError{message: "Cannot depend on the factory bean being created"}
 	UnknownBeanNameError        = &IocError{message: "Unknown bean name"}
 	ConfigKeyError              = &IocError{message: "config key error"}
+	UnknownConfigKeyError       = &IocError{message: "unknown config key"}
 	UnknownConfigKeySubKeyError = &IocError{message: "unknown config key sub key"}
 	ConfigKeySubKeyResolveError = &IocError{message: "config key sub key resolve failed"}
 )
